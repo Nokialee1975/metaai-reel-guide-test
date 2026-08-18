@@ -24,7 +24,7 @@
 </style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>生成AIリール作成ガイド v4 - AppStore飛ばし修正</title>
+<title>生成AIリール作成ガイド v5 - 繰り返しブロック修正</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-white text-gray-900">
@@ -43,8 +43,12 @@ const poems=[`風が少しだけやさしくなって\n影が長くなる夕方\
 function bUrl(p){return p.join('');}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),3000);}
 
-// 改善版 openApp: iframeでdeepLink試行 → 可視なら外部ブラウザ強制 → 最後に_blank
+// v5 シンプル版: 1クリック1回だけ試行で繰り返しブロック回避
+let __opening=false;
 function openApp(deep, fb){
+ if(__opening) return;
+ __opening=true;
+ setTimeout(()=>{__opening=false;},2500);
  const ua=navigator.userAgent;
  const isIOS=/iPhone|iPad|iPod/i.test(ua);
  const isAnd=/Android/i.test(ua);
@@ -58,7 +62,7 @@ function openApp(deep, fb){
  window.addEventListener('pagehide',onHide);
  window.addEventListener('blur',onHide);
 
- // 1. deep linkをiframeで試す（ページ遷移を防ぐ）
+ // deep linkはiframeで1回だけ
  try{
   const ifr=document.createElement('iframe');
   ifr.style.display='none';
@@ -67,47 +71,14 @@ function openApp(deep, fb){
   setTimeout(()=>{try{document.body.removeChild(ifr);}catch{}},2000);
  }catch{}
 
- // 2. 念のため location.hrefでも試す（アプリ起動用）
- try{ window.location.href=deep; }catch{}
-
- // 3. 1.2秒後にまだ表示されていたらApp Store/外部ブラウザに強制遷移
+ // 1秒後にまだこのページが見えていたら、App Storeを新しいタブで1回だけ開く
  setTimeout(()=>{
-  if(hidden || document.hidden || document.visibilityState==='hidden'){
-   document.removeEventListener('visibilitychange',onHide);
-   window.removeEventListener('pagehide',onHide);
-   window.removeEventListener('blur',onHide);
-   return;
-  }
-  // iOSは x-safari- でSafari強制 → ダメなら _blank
-  if(isIOS){
-   try{
-    // x-safari- は iOSでSafariを強制的に開く
-    window.location.href=bUrl(['x','-','safari','-',fbUrl]);
-   }catch{}
-   setTimeout(()=>{
-    if(!hidden && document.visibilityState!=='hidden'){
-     window.open(fbUrl,'_blank');
-    }
-   },400);
-  } else if(isAnd){
-   // Androidは intent で Chrome強制
-   try{
-    const noProto=fbUrl.replace(/^https:\/\//,'');
-    const intent=bUrl(['intent',':','/','/',noProto,'#','Intent',';','scheme','=','https',';','package','=','com','.','android','.','chrome',';','end']);
-    window.location.href=intent;
-   }catch{}
-   setTimeout(()=>{
-    if(!hidden && document.visibilityState!=='hidden'){
-     window.open(fbUrl,'_blank');
-    }
-   },400);
-  } else {
-   window.open(fbUrl,'_blank');
-  }
   document.removeEventListener('visibilitychange',onHide);
   window.removeEventListener('pagehide',onHide);
   window.removeEventListener('blur',onHide);
- },1200);
+  if(hidden || document.hidden || document.visibilityState==='hidden') return;
+  window.open(fbUrl,'_blank');
+ },1000);
 }
 
 function metaAI(){
@@ -169,7 +140,7 @@ function render(){
  </div>`:''}
  <div class="py-6">
   <h1 class="text-xl font-black leading-tight">初心者🔰向け・無課金 | 画像・動画生成から編集まで | 生成AIインスタリール作成ガイド<br><span class="text-sm font-bold text-gray-500">v4 - App Store飛ばし修正版</span></h1>
-  <p class="mt-3 text-sm bg-gray-50 p-3 rounded-xl border">MetaAI (アプリ、インスタDM) × Editsで作るインスタリール。ないけどありそうな夏。全部無料でできる作り方。<br><span class="text-[11px] text-green-600 font-bold">✓ 修正: iframeでアプリ起動→失敗時にx-safari-/intentで外部ブラウザ強制→App Store(_blank)方式に変更</span></p>
+  <p class="mt-3 text-sm bg-gray-50 p-3 rounded-xl border">MetaAI (アプリ、インスタDM) × Editsで作るインスタリール。ないけどありそうな夏。全部無料でできる作り方。<br><span class="text-[11px] text-green-600 font-bold">✓ 修正: 1クリック1回のみのiframe試行→失敗時1回のみ_blankでApp Storeを開く方式に変更（繰り返しブロック回避）</span></p>
   <div class="grid grid-cols-3 gap-2 mt-4">
    <button onclick="metaAI()" class="border rounded-xl p-2 flex flex-col items-center gap-1 bg-blue-50"><div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm">✦</div><span class="text-[11px] font-bold">Meta AI</span><span class="text-[9px] text-green-600">JP:1558240027 新タブ</span></button>
    <button onclick="insta()" class="border rounded-xl p-2 flex flex-col items-center gap-1 bg-gradient-to-br from-yellow-50 to-pink-50"><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">📷</div><span class="text-[11px] font-bold">Instagram</span><span class="text-[9px] text-gray-500">アプリ優先→Web新タブ</span></button>
