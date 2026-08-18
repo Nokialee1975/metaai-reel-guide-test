@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>生成AIリール作成ガイド v4 - AppStore飛ばし修正</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white text-gray-900">
+<div id="app" class="max-w-3xl mx-auto px-4 pb-24"></div>
+<div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black text-white text-sm px-4 py-2 rounded-full hidden z-50"></div>
+<script>
+const BASES=[
+{id:1,name:"港のかき氷",e:"🍧"},{id:2,name:"雨上がり",e:"🌧️"},{id:3,name:"麦茶の結露",e:"🍵"},{id:4,name:"爽やか夏プール",e:"🏊"},{id:5,name:"高再現度ビーチ",e:"🏖️"},{id:6,name:"石段ポートレート",e:"🪨"},{id:7,name:"手持ち花火",e:"🎆"},{id:8,name:"Y2K",e:"✨"},{id:9,name:"縁側の風鈴",e:"🎐"},{id:10,name:"80s",e:"📻"},{id:11,name:"街角カフェ",e:"☕"},{id:12,name:"ビル屋上",e:"🏙️"},
+];
+const outF={1:"水色サイケ柄ホルターネックトップス、ハイウエストデニムショーツ",2:"赤い花柄Tシャツ、デニムショーツ",3:"白いリネンのサマーワンピース、麦わら帽子",4:"白いリネンのサマーワンピース（ビーチカバーとして）、ベージュの水着風インナー",5:"生成りのサマードレス、ストローハット",6:"ネイビーのキャミワンピース",7:"斉藤上太郎の浴衣",8:"スカーフスタイルのホルターネックトップ",9:"白い甚平風サロペット",10:"白いサマードレスとブラウンベルト",11:"ベージュのノースリーブ襟付きボーダーニットポロシャツ",12:"黒の肩紐付きグレーの薄手スウェット生地のオフショルダートップス"};
+const outM={1:"半袖ネイビーのフレッドペリーポロシャツ",2:"半袖白いボタンダウンシャツ",3:"生成りのリネン開襟シャツ",4:"ブルー系のアロハシャツ",5:"半袖ナイキのスポーツウェア",6:"ベージュのフレッドペリーポロシャツ",7:"斉藤上太郎の紺色の浴衣",8:"バンドTシャツの上にシャツ",9:"半袖スウェット",10:"白と青のボーダーTシャツ",11:"ベージュの半袖襟付きボーダーニットポロシャツ",12:"Tシャツの上に半袖ボタンダウンシャツ"};
+const angs={1:["正面、胸上、50mm","斜め45度","横顔","上から見下ろし","下から見上げる","自撮り風","全身、港の屋台を背景に","顔アップ","振り向き","両手でかき氷を持ち"],2:["上からの自撮り","アイレベル、正面からややローアングル、カメラは顎より少し下で水平、チルトなし、自撮り風に腕を伸ばした距離、胸上カット","斜め45度","横顔","ローアングル","顔アップ","全身","振り向き","両手で傘を持つ","夕立後の照り返し"],3:["正面、テーブル越し","斜め45度","横顔","上から","ローアングル","顔アップ","全身","振り向き","両手でグラスを持つ","夕方の縁側"],4:["プールサイドで正面","斜め、青空とプール","横顔","上から見下ろし","ローアングル","顔アップ","全身","振り向き","両手でサングラス","爽やかに笑う"],5:["ビーチで正面","斜め45度","横顔","上から","ローアングル","顔アップ","全身","振り向き","両手で帽子押さえる","笑顔"],6:["石段に座る正面","斜め","横顔","上から","ローアングル","顔アップ","全身","振り向き","両手で膝を抱える","自然な微笑み"],7:["夜、公園で花火持つ正面","斜め","横顔","上から","ローアングル","顔アップ","全身","振り向き","両手で花火","夜風"],8:["Y2Kエディトリアル正面","斜め","横顔","上から","ローアングル","顔アップ","全身","振り向き","両手でバッグ持つ","クールな表情"],9:["縁側で正面","斜め","横顔","上から","ローアングル","顔アップ","全身","振り向き","両手で膝","夏の午後"],10:["駅前でスーツケース持つ正面","斜め","横顔","上から","ローアングル","顔アップ","全身","振り向き","両手でスーツケース","Kodak Portra 400風"],11:["頭に手を置く横目","頭に手を置く正面","見下ろし首かしげ","肩越し振り向き","両手で顔包む","正面首かしげ","斜め45度","横顔","ローアングル","全身、カフェの椅子に座る"],12:["屋上で正面","斜め","夕暮れと風","横顔","上から","ローアングル","顔アップ","全身","振り向き","両手で手すり","少し白飛び"]};
+const tmpl={1:"[顔]、髪型は[髪型]、[衣装]、[アイテム1]、港の屋台 店名[店名]、背景ぼかし、ピント顔、[アイテム2]を持っている、昭和レトロフィルム、縦長9:16、フォトリアル、8k、[角度]",2:"[顔]、元の髪型維持、[衣装]、フォトリアル、夏の記憶っぽい、自然光、逆光、少し白飛び、フィルムグレイン、夕立後の照り返し - 濡れたアスファルトに空が映る、ガラスや水面の反射・映り込みを活かす、映り込みに洋服店[店名]、[角度]、背景ぼかし、ピント顔、縦長9:16",3:"[顔]、髪型は[髪型]、[衣装]、縦長9:16、フォトリアル、夏の記憶っぽい、自然光、逆光、少し白飛び、フィルムグレイン、[店名]ロゴ入りのグラス、麦茶のグラスの結露、水滴と光、木のテーブル、背景ぼかし、ピント顔たまに麦茶、[角度]",4:"[顔]を使って、縦長9:16、爽やか夏のプール、青空、青いプール、自然光、フォトジェニック、[店名]の[衣装]、髪型は[髪型]、[角度]",5:"[顔] 縦長9:16のインスタ投稿向け画像。爽やか王道の夏ビーチ、青空と白い砂浜、自然光、フォトジェニックで清潔感。同じ人物で再現度高く、顔の輪郭・目の形・眉・鼻・口・肌の色を保持、別人にならない。服装: [店名]の[衣装]、ポーズ: [角度]、高画質、9:16縦長、[髪型]",6:"[顔]、髪型は[髪型]、[衣装]にさりげない[店名]のプリント、この人物で、石段に座るシーン、屋外の古い石段、柔らかい自然光、浅い被写界深度、フォトリアル、高詳細、ナチュラルなつや肌感、過度に性的にならない自然な表現で、背景ぼかし、ピント顔、[角度]、縦長9:16",7:"[顔]、髪型は[髪型]、[衣装]、公園、街灯にさりげなく[店名]のロゴ、手持ち花火、夜、フォトリアル、自然光、少し白飛び、フィルムグレイン、縦長、背景ぼかし、ピント花火、縦長9:16、[角度]",8:"[顔]、髪型は[髪型]、[衣装]、ハイクオリティなファッションエディトリアル、壁にさりげなく[店名]のロゴ、シャープなフォーカス、自然光、9:16縦長、[角度]",9:"[顔]、髪型は[髪型]、[衣装]のさりげなく[店名]のプリント、縦長9:16、縁側、風鈴、木造家屋、夏の記憶っぽい、自然光、逆光、少し白飛び、フィルムグレイン、[角度]",10:"[顔]、髪型は[髪型]、[衣装]、[店名]のスーツケース、ヴィンテージカーがある[店名]駅前ロケーション、ゴールデンアワーの温かい光、Kodak Portra 400のフィルムルック、浅い被写界深度、美しいボケ、シネマティックでリアル、縦長9:16、[角度]",11:"[顔] 縦長9:16のインスタ投稿向け画像。爽やか王道の夏の街カフェ、強い自然光、少し白飛び、フォトジェニック。[衣装]にさりげなく[店名]のプリント、髪型は[髪型]、同じ人物で再現度高く、顔の輪郭・目の形・大きさ・二重幅・瞳の色・ハイライト・眉・鼻・口・肌の色を保持、別人にならない。ポーズ: [角度]、高画質、9:16縦長",12:"[顔]、髪型は[髪型]、[衣装]にさりげなく[店名]のプリント、縦長9:16、フォトリアル、夏の夕暮れ記憶っぽい、自然光、逆光、少し白飛び、フィルムグレイン、屋上、手すり、都会の景色ボケ、ピント顔、[角度]"};
+let s={account:"",gender:"female",base:1,shop:"The Alobys",outfit:outF[1],hair:"維持",item1:"オレンジvespa",item2:"かき氷",gen:[],prog:0,open:{a1:false,a2:false,a3:false},tag:true,poem:0};
+const poems=[`風が少しだけやさしくなって\n影が長くなる夕方\nどこにも行かないのに\n今日は特別な気がした\n麦茶の氷が小さく鳴る`,`自転車のブレーキの音と\n遠くの入道雲\n戻らない夏を\nちゃんと覚えておこうと\n深呼吸をした`,`コンビニのアイスの袋が\n汗をかいている\n信号待ちの数秒が\nやけに長く感じて\n好きだな、夏って`,`何も予定のない午後\n扇風機だけが働いている\n君からの返信はまだだけど\nこの暑さも悪くないなと\n思えたんだ`,`夕立のあと\nアスファルトに映る空が\n本物より綺麗で\n写真を撮る手を止めて\nただ見ていた`];
+function bUrl(p){return p.join('');}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),3000);}
+
+// 改善版 openApp: iframeでdeepLink試行 → 可視なら外部ブラウザ強制 → 最後に_blank
+function openApp(deep, fb){
+ const ua=navigator.userAgent;
+ const isIOS=/iPhone|iPad|iPod/i.test(ua);
+ const isAnd=/Android/i.test(ua);
+ let fbUrl=fb.other;
+ if(isIOS) fbUrl=fb.ios;
+ else if(isAnd) fbUrl=fb.android;
+
+ let hidden=false;
+ const onHide=()=>{hidden=true;};
+ document.addEventListener('visibilitychange',onHide);
+ window.addEventListener('pagehide',onHide);
+ window.addEventListener('blur',onHide);
+
+ // 1. deep linkをiframeで試す（ページ遷移を防ぐ）
+ try{
+  const ifr=document.createElement('iframe');
+  ifr.style.display='none';
+  ifr.src=deep;
+  document.body.appendChild(ifr);
+  setTimeout(()=>{try{document.body.removeChild(ifr);}catch{}},2000);
+ }catch{}
+
+ // 2. 念のため location.hrefでも試す（アプリ起動用）
+ try{ window.location.href=deep; }catch{}
+
+ // 3. 1.2秒後にまだ表示されていたらApp Store/外部ブラウザに強制遷移
+ setTimeout(()=>{
+  if(hidden || document.hidden || document.visibilityState==='hidden'){
+   document.removeEventListener('visibilitychange',onHide);
+   window.removeEventListener('pagehide',onHide);
+   window.removeEventListener('blur',onHide);
+   return;
+  }
+  // iOSは x-safari- でSafari強制 → ダメなら _blank
+  if(isIOS){
+   try{
+    // x-safari- は iOSでSafariを強制的に開く
+    window.location.href=bUrl(['x','-','safari','-',fbUrl]);
+   }catch{}
+   setTimeout(()=>{
+    if(!hidden && document.visibilityState!=='hidden'){
+     window.open(fbUrl,'_blank');
+    }
+   },400);
+  } else if(isAnd){
+   // Androidは intent で Chrome強制
+   try{
+    const noProto=fbUrl.replace(/^https:\/\//,'');
+    const intent=bUrl(['intent',':','/','/',noProto,'#','Intent',';','scheme','=','https',';','package','=','com','.','android','.','chrome',';','end']);
+    window.location.href=intent;
+   }catch{}
+   setTimeout(()=>{
+    if(!hidden && document.visibilityState!=='hidden'){
+     window.open(fbUrl,'_blank');
+    }
+   },400);
+  } else {
+   window.open(fbUrl,'_blank');
+  }
+  document.removeEventListener('visibilitychange',onHide);
+  window.removeEventListener('pagehide',onHide);
+  window.removeEventListener('blur',onHide);
+ },1200);
+}
+
+function metaAI(){
+ const deep=bUrl(['meta','-','ai',':','/','/']);
+ const fb={
+  ios:bUrl(['https',':','/','/','apps','.','apple','.','com','/','jp','/','app','/','meta','-','ai','/','id','1558240027']),
+  android:bUrl(['https',':','/','/','play','.','google','.','com','/','store','/','apps','/','details','?','id','=','com','.','facebook','.','stella']),
+  other:bUrl(['https',':','/','/','www','.','meta','.','ai','/'])
+ };
+ openApp(deep,fb);
+}
+function edits(){
+ const deep=bUrl(['edits',':','/','/']);
+ const fb={
+  ios:bUrl(['https',':','/','/','apps','.','apple','.','com','/','app','/','edits','-','video','-','editor','/','id','6738967378']),
+  android:bUrl(['https',':','/','/','play','.','google','.','com','/','store','/','apps','/','details','?','id','=','com','.','instagram','.','basel']),
+  other:bUrl(['https',':','/','/','creators','.','instagram','.','com','/','edits'])
+ };
+ openApp(deep,fb);
+}
+function insta(){
+ const deep=bUrl(['instagram',':','/','/']);
+ const fb={
+  ios:bUrl(['https',':','/','/','apps','.','apple','.','com','/','app','/','instagram','/','id','389801252']),
+  android:bUrl(['https',':','/','/','play','.','google','.','com','/','store','/','apps','/','details','?','id','=','com','.','instagram','.','android']),
+  other:bUrl(['https',':','/','/','www','.','instagram','.','com','/'])
+ };
+ openApp(deep,fb);
+}
+function profile(h){
+ const url=bUrl(['https',':','/','/','www','.','instagram','.','com','/',h,'/']);
+ const deep=bUrl(['instagram',':','/','/','user','?','username','=','',h]);
+ openApp(deep,{ios:url,android:url,other:url});
+}
+function gen(e){
+ if(e){e.preventDefault();e.stopPropagation();}
+ const face=s.account?`アカウント${s.account}の写真の顔をそのまま正確に、`:`アップロードした写真の顔をそのまま正確に、`;
+ const tp=tmpl[s.base];const ag=angs[s.base];
+ s.gen=ag.map(a=>{
+  let t=tp; t=t.replaceAll("[顔]",face); t=t.replaceAll("[髪型]",s.hair); t=t.replaceAll("[衣装]",s.outfit); t=t.replaceAll("[アイテム1]",s.item1); t=t.replaceAll("[アイテム2]",s.item2); t=t.replaceAll("[店名]",s.shop); t=t.replaceAll("[角度]",a); return t;
+ });
+ toast("プロンプト10個作成しました！"); render();
+}
+function copyT(txt,first){
+ navigator.clipboard.writeText(txt).then(()=>{toast("コピーしました！MetaAI(アプリの方)を開いて貼り付けてね"); if(first&&s.prog<1) s.prog=1; else if(!first&&s.prog===1) s.prog=2; render();});
+}
+function copyAll(){ if(!s.gen.length) return; navigator.clipboard.writeText(s.gen.join("\n\n")).then(()=>{toast("全部コピーしました！"); if(s.prog<1) s.prog=1; render();}); }
+
+function render(){
+ const app=document.getElementById('app');
+ const UA=navigator.userAgent; const isIOS=/iPhone|iPad|iPod/i.test(UA); const isAnd=/Android/i.test(UA);
+ const isIG=/Instagram/i.test(UA); const isFB=/FBAN|FBAV/i.test(UA); const isLINE=/Line/i.test(UA); const isMA=/MetaAI|Stella|FB_IAB/i.test(UA); const isTh=/Threads|Barcelona/i.test(UA);
+ const isInApp=isIG||isFB||isLINE||isMA||isTh;
+ const showItem=s.base<=2;
+ app.innerHTML=`
+ ${isInApp?`<div class="sticky top-0 z-50 -mx-4 px-4 py-3 bg-gradient-to-r from-yellow-500 to-red-500 text-white text-sm">
+  <div class="font-bold">アプリ内で開いています - 新しいタブで開き直し推奨</div><div class="text-xs opacity-90 mt-1">右上の『…』→『ブラウザで開く』をタップすると確実にApp Storeに飛べます。</div>
+  <div class="flex gap-2 mt-2"><button onclick="(function(){const u=location.href;const iOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);const And=/Android/i.test(navigator.userAgent);if(iOS){location.href='x-safari-'+u;}else if(And){location.href='intent://'+u.replace(/^https:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;end';}else window.open(u,'_blank');})()" class="bg-white text-red-600 px-3 py-1.5 rounded-full text-xs font-bold">Safari/Chromeで開くを試す</button><button onclick="navigator.clipboard.writeText(location.href);toast('URLをコピーしました')" class="bg-black/20 border border-white px-3 py-1.5 rounded-full text-xs">URLをコピー</button></div>
+ </div>`:''}
+ <div class="py-6">
+  <h1 class="text-xl font-black leading-tight">初心者🔰向け・無課金 | 画像・動画生成から編集まで | 生成AIインスタリール作成ガイド<br><span class="text-sm font-bold text-gray-500">v4 - App Store飛ばし修正版</span></h1>
+  <p class="mt-3 text-sm bg-gray-50 p-3 rounded-xl border">MetaAI (アプリ、インスタDM) × Editsで作るインスタリール。ないけどありそうな夏。全部無料でできる作り方。<br><span class="text-[11px] text-green-600 font-bold">✓ 修正: iframeでアプリ起動→失敗時にx-safari-/intentで外部ブラウザ強制→App Store(_blank)方式に変更</span></p>
+  <div class="grid grid-cols-3 gap-2 mt-4">
+   <button onclick="metaAI()" class="border rounded-xl p-2 flex flex-col items-center gap-1 bg-blue-50"><div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm">✦</div><span class="text-[11px] font-bold">Meta AI</span><span class="text-[9px] text-green-600">JP:1558240027 新タブ</span></button>
+   <button onclick="insta()" class="border rounded-xl p-2 flex flex-col items-center gap-1 bg-gradient-to-br from-yellow-50 to-pink-50"><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white">📷</div><span class="text-[11px] font-bold">Instagram</span><span class="text-[9px] text-gray-500">アプリ優先→Web新タブ</span></button>
+   <button onclick="edits()" class="border rounded-xl p-2 flex flex-col items-center gap-1 bg-gray-900 text-white"><div class="w-8 h-8 rounded bg-white text-black flex items-center justify-center text-[10px] font-black">Edits</div><span class="text-[11px] font-bold">Edits</span><span class="text-[9px] text-green-300">JP:6738967378 新タブ</span></button>
+  </div>
+  <div class="mt-3 text-[10px] text-gray-500 bg-yellow-50 p-2 rounded-lg border">もし飛ばない場合: 上の黄色バナーの「Safari/Chromeで開くを試す」を1回タップしてから、再度ボタンを押してください。Meta AIアプリ内ブラウザはApp Store遷移をブロックしやすいためです。</div>
+ </div>
+ <div class="sticky top-0 z-40 bg-white border-b -mx-4 px-4 py-3">
+  <div class="flex items-center justify-between">
+   <button onclick="document.getElementById('sec1').scrollIntoView({behavior:'smooth'});s.open.a1=true;render()" class="flex flex-col items-center gap-1 flex-1"><div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${s.prog>=1?'bg-green-500 text-white border-green-500':s.prog===0?'bg-purple-600 text-white border-purple-600':'bg-gray-200 text-gray-500 border-gray-200'}">${s.prog>=1?'✓':'1'}</div><span class="text-[11px] ${s.prog===0?'text-purple-600 font-bold':s.prog>=1?'text-green-600':'text-gray-400'}">画像を作る</span></button>
+   <div class="flex-1 h-[2px] mx-1 ${s.prog>=1?'bg-green-500':'bg-gray-200'}"></div>
+   <button onclick="document.getElementById('sec2').scrollIntoView({behavior:'smooth'});s.open.a2=true;render()" class="flex flex-col items-center gap-1 flex-1"><div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${s.prog>=2?'bg-green-500 text-white border-green-500':s.prog===1?'bg-purple-600 text-white border-purple-600':'bg-gray-200 text-gray-500 border-gray-200'}">${s.prog>=2?'✓':'2'}</div><span class="text-[11px] ${s.prog===1?'text-purple-600 font-bold':s.prog>=2?'text-green-600':'text-gray-400'}">動画にする</span></button>
+   <div class="flex-1 h-[2px] mx-1 ${s.prog>=2?'bg-green-500':'bg-gray-200'}"></div>
+   <button onclick="document.getElementById('sec3').scrollIntoView({behavior:'smooth'});s.open.a3=true;render()" class="flex flex-col items-center gap-1 flex-1"><div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${s.prog>=3?'bg-green-500 text-white border-green-500':s.prog===2?'bg-purple-600 text-white border-purple-600':'bg-gray-200 text-gray-500 border-gray-200'}">${s.prog>=3?'✓':'3'}</div><span class="text-[11px] ${s.prog===2?'text-purple-600 font-bold':s.prog>=3?'text-green-600':'text-gray-400'}">編集して完成</span></button>
+  </div>
+ </div>
+ <div class="mt-4 space-y-4">
+  <div id="sec1" class="border rounded-2xl overflow-hidden">
+   <button onclick="s.open.a1=!s.open.a1;render()" class="w-full flex items-center justify-between p-4 bg-white"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full flex items-center justify-center text-xs ${s.prog>=1?'bg-green-500 text-white':'bg-purple-600 text-white'}">${s.prog>=1?'✓':'1'}</div><span class="font-bold">①画像を作る</span></div><span class="text-gray-400">${s.open.a1?'▲':'▼'}</span></button>
+   ${s.open.a1?`<div class="p-4 bg-gray-50 space-y-4">
+    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm">🔰はじめての人へ「このガイドはプロンプトを作るツールです。作成アプリは別途必要です。下の日本語をコピーしてMetaAI(アプリ版)のチャット欄に貼り付けてください。ペーストで画像が貼りつきます。1プロンプトで1枚、計10枚作ります。」</div>
+    <label class="text-xs font-bold">アカウント名（任意）</label><input id="acc" value="${s.account}" placeholder="@your_account" class="w-full border rounded-lg px-3 py-2 text-sm"/>
+    <div class="flex gap-2"><button onclick="s.gender='female';s.outfit=outF[s.base];render()" class="flex-1 py-2 rounded-lg text-sm font-bold border ${s.gender==='female'?'bg-pink-500 text-white border-pink-500':'bg-white'}">女性 @nokia_lee_ 風</button><button onclick="s.gender='male';s.outfit=outM[s.base];render()" class="flex-1 py-2 rounded-lg text-sm font-bold border ${s.gender==='male'?'bg-blue-500 text-white border-blue-500':'bg-white'}">男性 @okdr201 風</button></div>
+    <div class="text-xs font-bold">ベース12択</div><div class="grid grid-cols-2 sm:grid-cols-3 gap-2">${BASES.map(b=>`<button onclick="s.base=${b.id};s.outfit=(s.gender==='female'?outF[${b.id}]:outM[${b.id}]);render()" class="border rounded-xl overflow-hidden text-left bg-white ${s.base===b.id?'ring-2 ring-purple-500':''}"><div class="aspect-[9/16] bg-gray-100 flex items-center justify-center text-3xl">${b.e}</div><div class="p-1.5 text-[11px] font-bold">${b.id}.${b.name}</div></button>`).join('')}</div>
+    <label class="text-xs font-bold">店名</label><input id="shop" value="${s.shop}" class="w-full border rounded-lg px-3 py-2 text-sm"/>
+    <label class="text-xs font-bold">衣装</label><textarea id="outfit" rows="4" class="w-full border rounded-lg px-3 py-2 text-sm">${s.outfit}</textarea>
+    <label class="text-xs font-bold">髪型</label><input id="hair" value="${s.hair}" class="w-full border rounded-lg px-3 py-2 text-sm"/>
+    ${showItem?`<label class="text-xs font-bold">象徴アイテム1</label><input id="item1" value="${s.item1}" class="w-full border rounded-lg px-3 py-2 text-sm"/><label class="text-xs font-bold">象徴アイテム2</label><input id="item2" value="${s.item2}" class="w-full border rounded-lg px-3 py-2 text-sm"/>`:''}
+    <button onclick="gen(event)" class="w-full bg-purple-600 text-white py-3 rounded-xl font-bold">プロンプトを作成</button>
+    ${s.gen.length?`<div class="space-y-3"><div class="flex gap-2"><button onclick="copyAll()" class="flex-1 bg-gray-900 text-white py-2 rounded-lg text-sm">全コピー</button><button onclick="metaAI()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm">Meta.AIアプリに移動 (JP ID)</button></div>${s.gen.map((p,i)=>`<div class="bg-white border rounded-xl p-3"><div class="text-[11px] text-gray-500 mb-1">プロンプト ${i+1}/10</div><div class="text-sm whitespace-pre-wrap">${p}</div><button onclick="copyT(\`${p.replace(/`/g,'\`')}\`,true)" class="mt-2 w-full bg-white border border-purple-300 text-purple-600 py-2 rounded-lg text-sm font-bold">コピー</button></div>`).join('')}</div>`:''}
+   </div>`:''}
+  </div>
+  <div id="sec2" class="border rounded-2xl overflow-hidden">
+   <button onclick="s.open.a2=!s.open.a2;render()" class="w-full flex items-center justify-between p-4 bg-white"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full flex items-center justify-center text-xs ${s.prog>=2?'bg-green-500 text-white':'bg-gray-200'}">${s.prog>=2?'✓':'2'}</div><span class="font-bold">動画にする</span></div><span class="text-gray-400">${s.open.a2?'▲':'▼'}</span></button>
+   ${s.open.a2?`<div class="p-4 bg-sky-50/50 space-y-3">
+    <div class="text-sm">インスタDMで動画化。①で作成した画像の中からお気に入りを選び(5個まで1回に添付できる)Meta.AIのインスタアカウントに送信。下の文章をコピーして送信</div>
+    <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-sm">💡アプリではなく<span class="text-red-600 font-bold">インスタのDM</span>でMeta.AIにメッセージします。</div>
+    <div class="text-xs text-gray-600">表情は変えずにまばたきはする は、顔を極力崩さないための呪文です</div>
+    <div class="bg-white border rounded-xl p-3"><div class="text-sm">この画像を動画にして。動きは最小で表情は変えずにまばたきだけ、フォトリアル、9:16</div><button onclick="copyT('この画像を動画にして。動きは最小で表情は変えずにまばたきだけ、フォトリアル、9:16',false)" class="mt-2 w-full bg-sky-600 text-white py-2 rounded-lg text-sm">コピー</button></div>
+    <button onclick="(function(){const d=bUrl(['instagram',':','/','/','direct','/','inbox','/']);const u=bUrl(['https',':','/','/','www','.','instagram','.','com','/','direct','/','inbox','/']);openApp(d,{ios:u,android:u,other:u});})()" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-xl font-bold">Meta AIのInstagram DMを開く</button>
+   </div>`:''}
+  </div>
+  <div id="sec3" class="border rounded-2xl overflow-hidden">
+   <button onclick="s.open.a3=!s.open.a3;render()" class="w-full flex items-center justify-between p-4 bg-white"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full flex items-center justify-center text-xs bg-purple-600 text-white">3</div><span class="font-bold">③編集して完成</span></div><span class="text-gray-400">${s.open.a3?'▲':'▼'}</span></button>
+   ${s.open.a3?`<div class="p-4 bg-green-50/50 space-y-3">
+    <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-sm font-bold">編集は無料アプリEditsでできる。課金なし。(いつも慣れている編集アプリがあればそれを使えば良いがインスタリールを伸ばすなら同じ会社のeditsが良い。連携も楽。)</div>
+    <button onclick="edits()" class="w-full bg-black text-white py-3 rounded-xl font-bold">Editsアプリに移動する (JP ID:6738967378)</button>
+    <ol class="list-decimal pl-5 space-y-1 text-sm bg-white border rounded-xl p-4">
+     <li>Edits開く新規9:16</li><li>作成した画像と動画追加</li><li>下メニュー音源からにJun OKUNO suture 検索</li><li>音楽冒頭をインパクトのあるとこにする</li><li>タイムラインで曲を選ぶ</li><li>ビートメニュー</li><li>自動検出には失敗する</li><li>少し音楽を戻して再生しながらインパクトのあるところで「追加」をタップ</li><li>タイムラインで素材がビートに吸着するようになるので並べる</li><li>テキスト「全部AI。ないけどありそうな夏」</li><li>次へを押すとレンダリングが始まる。</li>
+    </ol>
+    <div class="border rounded-2xl p-4 bg-white"><div class="font-bold mb-2">④キャプション</div><div class="flex items-center gap-2 mb-2"><span class="text-xs">店名タグ</span><button onclick="s.tag=!s.tag;render()" class="w-10 h-5 rounded-full p-0.5 ${s.tag?'bg-purple-600':'bg-gray-300'}"><div class="w-4 h-4 bg-white rounded-full transition ${s.tag?'translate-x-5':''}"></div></button><span class="text-xs">${s.tag?'あり':'なし'}</span></div><div class="text-sm whitespace-pre-wrap bg-gray-50 p-3 rounded-xl">全部AI。ないけどありそうな夏
+
+${poems[s.poem].replace(/\n/g,'<br>')}
+
+${s.tag?'@'+s.shop.replace(/\s/g,'')+' ':''}#ないけどありそうな夏 #全部AI ${[3].includes(s.base)?'#麦茶の季節 #夏の記憶 #結露':[4,5,7,9].includes(s.base)?'#夏コーデ':''}</div><div class="flex gap-2 mt-2"><button onclick="s.poem=(s.poem+1)%poems.length;render()" class="flex-1 border py-2 rounded-lg text-sm">リポエム</button><button onclick="copyT('全部AI。ないけどありそうな夏\n\n'+poems[s.poem],false)" class="flex-1 bg-gray-900 text-white py-2 rounded-lg text-sm">コピー</button></div><button onclick="insta()" class="w-full mt-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white py-2 rounded-lg text-sm font-bold">インスタに移動する</button></div>
+   </div>`:''}
+  </div>
+ </div>
+`;
+ const acc=document.getElementById('acc'); if(acc) acc.addEventListener('input',e=>{s.account=e.target.value;});
+ const shop=document.getElementById('shop'); if(shop) shop.addEventListener('input',e=>{s.shop=e.target.value;});
+ const outEl=document.getElementById('outfit'); if(outEl) outEl.addEventListener('input',e=>{s.outfit=e.target.value;});
+ const hairEl=document.getElementById('hair'); if(hairEl) hairEl.addEventListener('input',e=>{s.hair=e.target.value;});
+ const i1=document.getElementById('item1'); if(i1) i1.addEventListener('input',e=>{s.item1=e.target.value;});
+ const i2=document.getElementById('item2'); if(i2) i2.addEventListener('input',e=>{s.item2=e.target.value;});
+}
+render();
+</script>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
+</html>
